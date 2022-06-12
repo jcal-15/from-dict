@@ -98,10 +98,10 @@ def resolve_str_forward_ref(
     local_ns: Optional[dict]=None
         ) -> Type:
     if isinstance(type_or_name, str):
-        if type_or_name in local_ns:
+        if local_ns and type_or_name in local_ns:
             print("In Locals")
             return local_ns[type_or_name]
-        elif type_or_name in global_ns:
+        elif global_ns and type_or_name in global_ns:
             print("In Globals")
             return global_ns[type_or_name]
 
