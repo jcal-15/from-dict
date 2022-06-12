@@ -1,6 +1,7 @@
 import sys
 import typing
-from typing import Type, TypeVar, Optional, Mapping
+import functools
+from typing import Type, TypeVar, Optional, Mapping, Union
 
 PYTHON_VERSION = sys.version_info[:2]
 IS_GE_PYTHON38 = PYTHON_VERSION >= (3, 8)  # Support for typing.get_args and typing.get_origin
@@ -79,18 +80,47 @@ def type_check(v, t) -> None:
             type_check(element, targ)
 
 
-def get_constructor_type_hints(cls: Optional[Type]) -> Optional[Mapping[str, Type]]:
+def get_constructor_type_hints(
+        cls: Optional[Type], 
+        global_ns: Optional[dict]=None, 
+        local_ns: Optional[dict]=None
+) -> Optional[Mapping[str, Type]]:
     if cls is None:
         return None
 
-    return typing.get_type_hints(cls.__init__) or typing.get_type_hints(cls)
+    return typing.get_type_hints(cls.__init__, global_ns, local_ns) or typing.get_type_hints(cls, global_ns, local_ns)
 
+
+def resolve_str_forward_ref(
+    type_or_name: Union[str, Type], 
+    cls: Type,
+    global_ns: Optional[dict]=None, 
+    local_ns: Optional[dict]=None
+        ) -> Type:
+    if isinstance(type_or_name, str):
+        if type_or_name in local_ns:
+            print("In Locals")
+            return local_ns[type_or_name]
+        elif type_or_name in global_ns:
+            print("In Globals")
+            return global_ns[type_or_name]
+
+        # A string indicates that we could not directly reference the class
+        # Attempt to find the class specified
+        elif hasattr(sys.modules[cls.__module__], type_or_name):
+            print("In Modules")
+            return getattr(sys.modules[cls.__module__], type_or_name)
+        else:
+            raise TypeError(f"Type hint '{type_or_name}' could not be resolved")
+    return type_or_name
 
 def from_dict(
         cls: Type[C],
         fd_from: Optional[dict] = None,
         fd_check_types: bool = False,
         fd_copy_unknown: bool = True,
+        fn_global_ns: Optional[dict] = None,
+        fn_local_ns: Optional[dict] = None,
         **overwrite_kwargs: Optional[dict]
 ) -> C:
     """Instantiate a class with parameters given by a dict.
@@ -110,7 +140,14 @@ def from_dict(
     :param overwrite_kwargs: All additional keys will overwrite whatever is given in the dictionary.
     :return: Object of cls constructed with keys extracted from fd_from.
     """
-    cls_constructor_argument_types = get_constructor_type_hints(cls)
+    #_get_constructor_type_hints = lambda cls_: get_constructor_type_hints(cls_, fn_global_ns, fn_local_ns)
+    #_resolve_str_forward_ref = lambda type_or_name: resolve_str_forward_ref(type_or_name, cls, fn_global_ns, fn_local_ns)
+
+    _get_constructor_type_hints = functools.partial(get_constructor_type_hints, global_ns=fn_global_ns, local_ns=fn_local_ns)
+    _resolve_str_forward_ref = functools.partial(resolve_str_forward_ref, cls=cls, global_ns=fn_global_ns, local_ns=fn_local_ns)
+    
+    cls_constructor_argument_types = _get_constructor_type_hints(cls)
+
     if not cls_constructor_argument_types:
         raise TypeError(f"Given class {cls} is not supported by from_dict")
 
@@ -133,13 +170,14 @@ def from_dict(
         except KeyError:
             continue
 
+        cls_arg_type_args = get_args(cls_argument_type)
         # Recursively from_dict attributes which are structures, too
         if (isinstance(given_argument, dict)
                 and get_origin(cls_argument_type) in (dict, typing.Dict)  # in Python36, origin is Dict not dict
-                and get_constructor_type_hints(get_args(cls_argument_type)[1])):
+                and _get_constructor_type_hints(cls_arg_type_args[1])):
             # Dict[a,b]; we only support b being a structure.
             try:
-                key_type, value_type = get_args(cls_argument_type)
+                key_type, value_type = cls_arg_type_args
                 if fd_check_types:  # Perform type check on keys
                     all(type_check(k, key_type) for k in given_argument.keys())
                 argument_value = {
@@ -149,7 +187,7 @@ def from_dict(
             except FromDictTypeError as e:
                 # Add location for better error message
                 raise FromDictTypeError([cls_argument_name] + e.location, e.expected_type, e.found_type)
-        elif isinstance(given_argument, dict) and get_constructor_type_hints(cls_argument_type):
+        elif isinstance(given_argument, dict) and _get_constructor_type_hints(cls_argument_type):
             try:
                 argument_value = from_dict(cls_argument_type, given_argument, fd_check_types=fd_check_types)
             except FromDictTypeError as e:
@@ -157,9 +195,9 @@ def from_dict(
                 raise FromDictTypeError([cls_argument_name] + e.location, e.expected_type, e.found_type)
         elif (isinstance(given_argument, list)
               and get_origin(cls_argument_type) in (list, typing.List)  # in Python36, origin is List not list
-              and get_constructor_type_hints(get_args(cls_argument_type)[0])):
+              and _get_constructor_type_hints(_resolve_str_forward_ref(cls_arg_type_args[0]))):
             try:
-                list_var_type = get_args(cls_argument_type)[0]
+                list_var_type = _resolve_str_forward_ref(cls_arg_type_args[0])
                 argument_value = [from_dict(list_var_type, x, fd_check_types=fd_check_types) for x in given_argument]
             except FromDictTypeError as e:
                 # Add location for better error message
