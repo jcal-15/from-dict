@@ -119,8 +119,8 @@ def from_dict(
         fd_from: Optional[dict] = None,
         fd_check_types: bool = False,
         fd_copy_unknown: bool = True,
-        fn_global_ns: Optional[dict] = None,
-        fn_local_ns: Optional[dict] = None,
+        fd_global_ns: Optional[dict] = None,
+        fd_local_ns: Optional[dict] = None,
         **overwrite_kwargs: Optional[dict]
 ) -> C:
     """Instantiate a class with parameters given by a dict.
@@ -140,14 +140,12 @@ def from_dict(
     :param overwrite_kwargs: All additional keys will overwrite whatever is given in the dictionary.
     :return: Object of cls constructed with keys extracted from fd_from.
     """
-    #_get_constructor_type_hints = lambda cls_: get_constructor_type_hints(cls_, fn_global_ns, fn_local_ns)
-    #_resolve_str_forward_ref = lambda type_or_name: resolve_str_forward_ref(type_or_name, cls, fn_global_ns, fn_local_ns)
 
-    _get_constructor_type_hints = functools.partial(get_constructor_type_hints, global_ns=fn_global_ns, local_ns=fn_local_ns)
-    _resolve_str_forward_ref = functools.partial(resolve_str_forward_ref, cls=cls, global_ns=fn_global_ns, local_ns=fn_local_ns)
-    
+    _get_constructor_type_hints = functools.partial(get_constructor_type_hints, global_ns=fd_global_ns, local_ns=fd_local_ns)
+    _resolve_str_forward_ref = functools.partial(resolve_str_forward_ref, cls=cls, global_ns=fd_global_ns, local_ns=fd_local_ns)
+    _from_dict = functools.partial(from_dict, fd_check_types=fd_check_types, fd_global_ns=fd_global_ns, fd_local_ns=fd_local_ns)
+
     cls_constructor_argument_types = _get_constructor_type_hints(cls)
-
     if not cls_constructor_argument_types:
         raise TypeError(f"Given class {cls} is not supported by from_dict")
 
@@ -181,7 +179,7 @@ def from_dict(
                 if fd_check_types:  # Perform type check on keys
                     all(type_check(k, key_type) for k in given_argument.keys())
                 argument_value = {
-                    k: from_dict(value_type, v, fd_check_types=fd_check_types)
+                    k: _from_dict(value_type, v)
                     for k, v in given_argument.items()
                 }
             except FromDictTypeError as e:
@@ -189,7 +187,7 @@ def from_dict(
                 raise FromDictTypeError([cls_argument_name] + e.location, e.expected_type, e.found_type)
         elif isinstance(given_argument, dict) and _get_constructor_type_hints(cls_argument_type):
             try:
-                argument_value = from_dict(cls_argument_type, given_argument, fd_check_types=fd_check_types)
+                argument_value = _from_dict(cls_argument_type, given_argument)
             except FromDictTypeError as e:
                 # Add location for better error message
                 raise FromDictTypeError([cls_argument_name] + e.location, e.expected_type, e.found_type)
@@ -198,7 +196,7 @@ def from_dict(
               and _get_constructor_type_hints(_resolve_str_forward_ref(cls_arg_type_args[0]))):
             try:
                 list_var_type = _resolve_str_forward_ref(cls_arg_type_args[0])
-                argument_value = [from_dict(list_var_type, x, fd_check_types=fd_check_types) for x in given_argument]
+                argument_value = [_from_dict(list_var_type, x) for x in given_argument]
             except FromDictTypeError as e:
                 # Add location for better error message
                 raise FromDictTypeError([cls_argument_name] + e.location, e.expected_type, e.found_type)
