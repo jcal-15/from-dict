@@ -11,6 +11,10 @@ if sys.version_info[:2] >= (3, 7):
 else:
     from attr import dataclass
 
+if sys.version_info[:2] >= (3, 9):
+    LIST = list
+else:
+    LIST = List
 
 @dataclass
 class Structures:
@@ -69,10 +73,23 @@ class MainTestDictNamedTuple(NamedTuple):
     baz: SubTestDictNamedTuple
 
 
+# Dataclass structures
+@dataclass(frozen=True)
+class MainTestDictDataclassFrwRef:
+    foo: int
+    baz: 'SubTestDictDataclassFrwRef'
+
+
+@dataclass(frozen=True)
+class SubTestDictDataclassFrwRef:
+    foo: int
+    bar: str
+
 @pytest.fixture(params=[
     pytest.param(Structures(MainTestDictAttr, SubTestDictAttr, False, True), id="attr"),
     pytest.param(Structures(MainTestDictAttr, SubTestDictAttr, True, True), id="attr-with-validators"),
     pytest.param(Structures(MainTestDictDataclass, SubTestDictDataclass, False, True), id="dataclass"),
+    pytest.param(Structures(MainTestDictDataclassFrwRef, SubTestDictDataclassFrwRef, False, True), id="dataclass-forward-ref"),
     pytest.param(Structures(MainTestDictNamedTuple, SubTestDictNamedTuple, False, False), id="named-tuple"),
 ])
 def structures(request):
@@ -217,5 +234,14 @@ def test_union_works():
     assert from_dict(UClass, {"a": "hello"}, fd_check_types=True).a == "hello"
     assert from_dict(UClass, {"a": 22}, fd_check_types=True).a == 22
 
-    assert from_dict(UClass, {"a": "hello"}, fd_check_types=True).a == "hello"
-    assert from_dict(UClass, {"a": 22}, fd_check_types=True).a == 22
+
+def test_self_ref():
+    @dataclass
+    class Node:
+        name: str
+        children: LIST['Node']
+
+    data = {"name": "n1", "children": [{"name": "n2", "children": []}]}
+    node = from_dict(Node, data, fd_check_types=True, fd_local_ns=locals())
+    assert node.name == "n1"
+    assert node.children[0].name == "n2"
