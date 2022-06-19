@@ -1,6 +1,7 @@
 from typing import Optional, Union
 
 import sys
+import pytest
 
 from from_dict import from_dict, FromDictTypeError
 
@@ -82,11 +83,9 @@ def test_optional():
     assert node.node3 == None
     
     data = {"node1": {"name": "n1", "value": "v1"}}
-    try:
+    with pytest.raises(TypeError) as e:
         node = from_dict(NodeWithOptional, data, fd_check_types=True)
-        raise AssertionError("Expected to raise an exception")
-    except TypeError as ex:
-        assert "missing 1 required positional argument: 'node2'" in str(ex)
+    assert "missing 1 required positional argument: 'node2'" in str(e.value)
 
 
 def test_union():
@@ -109,12 +108,10 @@ def test_union():
     assert node.node["no_match"] == "node-X"
     
     data = {  "node": {"name": "n1", "no_match": "node-X"} }
-    try:
+    with pytest.raises(TypeError) as e:
         node = from_dict(NodeWithUnion, data, fd_check_types=True)
-        raise AssertionError("Expected to raise an exception")
-    except TypeError:
-        pass
-
+    assert str(e.value) == ('For "node", expected typing.Union[test_generics_with_dataclasses.SimpleNode, '
+                            'test_generics_with_dataclasses.SimpleNode2] but found <class \'dict\'>')
 
 def test_union_with_builtin_type():
     data = {  "node": {"name": "n1", "value": "v1"} }
@@ -135,15 +132,11 @@ def test_union_with_builtin_type():
     assert node.node["no_match"] == "node-X"
     
     data = {  "node": {"name": "n1", "no_match": "node-X"} }
-    try:
-        node = from_dict(NodeWithUnion, data, fd_check_types=True)
-        raise AssertionError("Expected to raise an exception")
-    except FromDictTypeError:
-        pass
-    
+    with pytest.raises(FromDictTypeError) as e:
+        from_dict(NodeWithUnionWithBuiltInType, data, fd_check_types=True)
+    assert str(e.value) == 'For "node", expected typing.Union[test_generics_with_dataclasses.SimpleNode, str] but found <class \'dict\'>'
+
     data = {  "node": 123 }
-    try:
-        node = from_dict(NodeWithUnion, data, fd_check_types=True)
-        raise AssertionError("Expected to raise an exception")
-    except FromDictTypeError:
-        pass
+    with pytest.raises(FromDictTypeError) as e:
+        node = from_dict(NodeWithUnionWithBuiltInType, data, fd_check_types=True)
+    assert str(e.value) == 'For "node", expected typing.Union[test_generics_with_dataclasses.SimpleNode, str] but found <class \'int\'>'

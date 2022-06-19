@@ -8,8 +8,10 @@ from from_dict import from_dict, FromDictTypeError
 
 if sys.version_info[:2] >= (3, 7):
     from dataclasses import dataclass
+    GLOBALS = None # Don't need globals()
 else:
     from attr import dataclass
+    GLOBALS = globals()
 
 @dataclass
 class Structures:
@@ -108,18 +110,18 @@ def test_packing(structures: Structures):
 
 
 def test_keyword_style(structures: Structures):
-    m = from_dict(structures.outer_structure, foo=22, baz=structures.inner_structure(foo=42, bar="Works :)"))
+    m = from_dict(structures.outer_structure, foo=22, baz=structures.inner_structure(foo=42, bar="Works :)"), fd_global_ns=GLOBALS)
     assert m.foo == 22
     assert m.baz.foo == 42
     assert m.baz.bar == "Works :)"
 
 
 def test_keyword_style_overwrites_positional(structures: Structures):
-    assert from_dict(structures.inner_structure, {"foo": 42, "bar": "Works :)"}, foo=0).foo == 0
+    assert from_dict(structures.inner_structure, {"foo": 42, "bar": "Works :)"}, foo=0, fd_global_ns=GLOBALS).foo == 0
 
 
 def test_additional_keys_are_allowed(structures: Structures):
-    my_obj = from_dict(structures.inner_structure, foo=22, bar="Works", additional=[1, 2, 3])
+    my_obj = from_dict(structures.inner_structure, foo=22, bar="Works", additional=[1, 2, 3], fd_global_ns=GLOBALS)
     assert my_obj.foo == 22
     assert my_obj.bar == "Works"
 
@@ -158,7 +160,7 @@ def test_missing_key_discovered_in_subdict_inherent(structures: Structures):
 def test_invalid_type_discovered_in_subdict_from_dict(structures: Structures):
     with pytest.raises(FromDictTypeError) as e:
         from_dict(structures.outer_structure, {"foo": 22, "baz": {"foo": 42, "bar": ["wrong type"]}},
-                  fd_check_types=True)
+                  fd_check_types=True, fd_global_ns=GLOBALS)
 
     assert str(e.value) == "For \"baz.bar\", expected <class 'str'> but found <class 'list'>"
 
