@@ -170,7 +170,8 @@ def from_dict(
         try:
             # Recursively from_dict attributes which are structures, too
             if isinstance(given_argument, dict):
-                argument_value = handle_dict_argument(fd_check_types, _get_constructor_type_hints, _from_dict, cls_argument_type, given_argument, cls_arg_type_args)
+                argument_value = handle_dict_argument(fd_check_types, _get_constructor_type_hints, _from_dict, 
+                                                      cls_argument_type, given_argument, cls_arg_type_args)
             elif (isinstance(given_argument, list)
                 and get_origin(cls_argument_type) in (list, typing.List)  # in Python36, origin is List not list
                 and _get_constructor_type_hints(_resolve_str_forward_ref(cls_arg_type_args[0]))):
