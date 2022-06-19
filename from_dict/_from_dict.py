@@ -208,7 +208,7 @@ def from_dict(
 def handle_dict_argument(
     fd_check_types: bool, 
     _get_constructor_type_hints: Callable[[Type], Optional[Mapping[str, Type]]], 
-    _from_dict: Callable, 
+    _from_dict: Callable[[Type[C], dict], C], 
     cls_argument_type: Type, 
     given_argument: dict, 
     cls_arg_type_args
