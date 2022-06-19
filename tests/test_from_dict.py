@@ -102,7 +102,7 @@ def test_packing(structures: Structures):
         }
     }
 
-    main_object = from_dict(structures.outer_structure, input_dict)
+    main_object = from_dict(structures.outer_structure, input_dict, fd_global_ns=GLOBALS)
 
     assert main_object.baz.bar == "Works :)"
     assert isinstance(main_object, structures.outer_structure)
@@ -168,7 +168,7 @@ def test_invalid_type_discovered_in_subdict_from_dict(structures: Structures):
 def test_invalid_type_discovered_in_subdict(structures: Structures):
     with pytest.raises(FromDictTypeError) as e:
         from_dict(structures.outer_structure, {"foo": 22, "baz": {"foo": 42, "bar": ["wrong type"]}},
-                  fd_check_types=True)
+                  fd_check_types=True, fd_global_ns=GLOBALS)
 
     assert str(e.value) == "For \"baz.bar\", expected <class 'str'> but found <class 'list'>"
 
