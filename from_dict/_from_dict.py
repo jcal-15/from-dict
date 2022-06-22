@@ -88,8 +88,19 @@ def get_constructor_type_hints(
     if cls is None:
         return None
 
-    return typing.get_type_hints(cls.__init__, global_ns, local_ns) or typing.get_type_hints(cls, global_ns, local_ns)
+    # Can't use caching if a namespace dictionary is passed in.
+    if global_ns or local_ns:
+        return typing.get_type_hints(cls.__init__, global_ns, local_ns) or typing.get_type_hints(cls, global_ns, local_ns)
 
+    return _get_constructor_type_hints(cls)
+
+
+def _get_constructor_type_hints(cls: Type) -> Mapping[str, Type]:
+    """ This is an optimized version of get_constructor_type_hints.
+        Unlike 'get_constructor_type_hints', it can be wrapped by functools.lru_cache 
+        because it does not take in dictionary objects. 
+    """
+    return typing.get_type_hints(cls.__init__) or typing.get_type_hints(cls)
 
 def resolve_str_forward_ref(
     type_or_name: Union[str, Type], 
