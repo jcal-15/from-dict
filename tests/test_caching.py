@@ -1,6 +1,8 @@
 import time
 import sys
 
+from typing import List, Dict
+
 from from_dict import from_dict, cache_disable, cache_enable, cache_is_enabled
 
 if sys.version_info[:2] >= (3, 7):
@@ -16,15 +18,15 @@ class MainData:
     name: str
     id: int
     date: str
-    inner: list['InnerData']
-    properties: dict[str, str]
+    inner: List['InnerData']
+    properties: Dict[str, str]
 
 
 @dataclass(frozen=True)
 class InnerData:
     name: str
     result: bool
-    tags: list[str]
+    tags: List[str]
 
 def test_cache_speed_improvement():
     test_data =  {
