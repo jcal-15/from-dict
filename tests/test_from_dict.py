@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, NamedTuple, Optional, Type, Union, TypeVar, Generic
+from typing import NamedTuple, Optional, Type, Union, TypeVar, Generic
 
 import attr
 import pytest
@@ -171,8 +171,8 @@ def test_invalid_list_element_type():
     class TstClass:
         a: int
         b: Optional[str]
-        c: List[int]
-        d: Dict[str, int]
+        c: list[int]
+        d: dict[str, int]
 
     with pytest.raises(FromDictTypeError) as e:
         opt = from_dict(TstClass, a=11, b=None, c=[1, 2, 3, "bad"], d={"a":1, "b": 2}, fd_check_types=True)
@@ -186,8 +186,8 @@ def test_invalid_dict_element_type():
     class TstClass:
         a: int
         b: Optional[str]
-        c: List[int]
-        d: Dict[str, int]
+        c: list[int]
+        d: dict[str, int]
 
     with pytest.raises(FromDictTypeError) as e:
         opt = from_dict(TstClass, a=11, b=None, c=[1, 2, 3, 4], d={"a":1, "b": 2, "C": "bad"}, fd_check_types=True)
@@ -201,8 +201,8 @@ def test_invalid_list_element_type_in_subclass():
     class TstClass:
         a: int
         b: Optional[str]
-        c: List[int]
-        d: Dict[str, int]
+        c: list[int]
+        d: dict[str, int]
 
     @dataclass(frozen=True)
     class TstClassMain:
@@ -220,8 +220,8 @@ def test_invalid_dict_element_type_in_subclass():
     class TstClass:
         a: int
         b: Optional[str]
-        c: List[int]
-        d: Dict[str, int]
+        c: list[int]
+        d: dict[str, int]
 
     @dataclass(frozen=True)
     class TstClassMain:
@@ -239,8 +239,8 @@ def test_subscripted_attr_generics_work():
     class KDict:
         a: int
         b: Optional[str]
-        c: List[int]
-        d: Dict[str, int]
+        c: list[int]
+        d: dict[str, int]
 
     opt = from_dict(KDict, a=11, b=None, c=[1, 2, 3], d={"a":1, "b": 2})
 
@@ -256,8 +256,8 @@ def test_dataclass_generics_work():
     class KDict:
         a: int
         b: Optional[str]
-        c: List[int]
-        d: Dict[str, int]
+        c: list[int]
+        d: dict[str, int]
 
     opt = from_dict(KDict, a=11, b=None, c=[1, 2, 3], d={"a":1, "b": 2})
 
@@ -277,7 +277,7 @@ def test_dataclass_generics_work():
 def test_list_of_structures_work(structures: Structures):
     @attr.s(auto_attribs=True)
     class KList:
-        a: List[structures.inner_structure]
+        a: list[structures.inner_structure]
 
     val = {
         "a": [
@@ -296,7 +296,7 @@ def test_list_of_structures_work(structures: Structures):
 def test_dict_with_substructure(structures: Structures):
     @attr.s(auto_attribs=True)
     class SubDict:
-        a: Dict[int, structures.inner_structure]
+        a: dict[int, structures.inner_structure]
 
     val = {
         "a": {
@@ -462,7 +462,7 @@ def test_generic_dataclass_with_generic_fields():
     @dataclass(frozen=True)
     class TstClassMain(Generic[TField1, TField2]):
         f_1: Optional[TField1]
-        f_2: List[TField2]
+        f_2: list[TField2]
 
     v = from_dict(TstClassMain[Data1, Data2], {"f_1": {"value":1}, "f_2": [{"value":"1"}] }, fd_check_types=True)
     assert isinstance(v.f_1, Data1)
@@ -499,7 +499,7 @@ def test_parent_generic_dataclass_with_generic_fields():
     @dataclass(frozen=True)
     class TstClassMainParent(Generic[TField1, TField2]):
         f_1: Optional[TField1]
-        f_2: List[TField2]
+        f_2: list[TField2]
 
     class TstClassMain(TstClassMainParent[Data1, Data2]):
         pass

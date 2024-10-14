@@ -3,11 +3,9 @@ import sys
 import typing
 from collections import ChainMap
 from dataclasses import is_dataclass
-from typing import Any, Callable, Dict, ForwardRef, Mapping, Optional, Type, Literal
-from typing import TypeVar, Union, List, get_args, get_origin
+from typing import Any, Callable, ForwardRef, Mapping, Optional, Literal
+from typing import TypeVar, Union, get_args, get_origin
 
-PYTHON_VERSION = sys.version_info[:2]
-IS_GE_PYTHON39 = PYTHON_VERSION >= (3, 9)
 C = TypeVar("C")
 
 
@@ -25,7 +23,7 @@ class FromDictTypeError(TypeError):
 
 
 class FromDictUnknownArgsError(ValueError):
-    def __init__(self, unknown_args: List[str]):
+    def __init__(self, unknown_args: list[str]):
         self.unknown_args = unknown_args
 
     def __str__(self):
@@ -83,7 +81,7 @@ def type_check(check_stack: list, v: Any, t: type) -> None:
 
     try:
         passed_isinstance = isinstance(v, t)
-    except TypeError:  # Could happen if t is of sort List[x], etc.
+    except TypeError:  # Could happen if t is of sort list[x], etc.
         passed_isinstance = True
 
     if not passed_isinstance:
@@ -107,7 +105,7 @@ def type_check(check_stack: list, v: Any, t: type) -> None:
             return  # Successfully type checked
         raise FromDictTypeError(location(), f"literal value(s) {type_args}", repr(v))
 
-    if not isinstance(v, origin):  # list ~ List[x], dict ~ Dict[x,y]
+    if not isinstance(v, origin):  # list ~ list[x], dict ~ dict[x,y]
         raise FromDictTypeError(location(), t, type(v))
 
     if origin == list:
@@ -133,9 +131,9 @@ def is_attr(cls):
 
 @functools.lru_cache(100)
 def get_constructor_type_hints(
-    cls: Optional[Type],
+    cls: Optional[type],
     ns_types: NamespaceTypes,
-) -> Mapping[str, Type]:
+) -> Mapping[str, type]:
     if cls is None:
         return {}
 
@@ -149,14 +147,14 @@ def get_constructor_type_hints(
 
 
 def _resolve_generic_class(
-    cls: Type,
+    cls: type,
     ns_types: NamespaceTypes,
-) -> Mapping[str, Type]:
+) -> Mapping[str, type]:
     """This is for classes that inherit from Generic.
     Swap out the generic parameters with the type args.
     """
 
-    def resolve_generic_arg(arg_cls: Type, swaps: Mapping[str, Type]):
+    def resolve_generic_arg(arg_cls: type, swaps: Mapping[str, type]):
         # A generic type definition inside the generic class
         arg_args = list(get_args(arg_cls))
         for i, arg in enumerate(arg_args):
@@ -166,11 +164,6 @@ def _resolve_generic_class(
                 arg_args[i] = resolve_generic_arg(arg, swaps)
 
         arg_origin = get_origin(arg_cls)
-        if not IS_GE_PYTHON39:
-            if arg_origin is list:
-                arg_origin = typing.List
-            elif arg_origin is dict:
-                arg_origin = typing.Dict
         return arg_origin[tuple(arg_args)]  # type: ignore
 
     origin = get_origin(cls)
@@ -196,12 +189,12 @@ def _resolve_generic_class(
 
 
 def resolve_str_forward_ref(
-    type_or_name: Union[str, Type],
-    cls: Type,
+    type_or_name: Union[str, type],
+    cls: type,
     ns_types: NamespaceTypes,
-) -> Type:
+) -> type:
     """starting in Python 3.9 types can be list['class-forward-reference'].
-    The inner string is not resolved like when typing.List['class-forward-reference'] is used.
+    The inner string is not resolved like when typing.list['class-forward-reference'] is used.
     This helper will attempt to resolve these string forward references.
     """
     if isinstance(type_or_name, ForwardRef):
@@ -214,9 +207,9 @@ def resolve_str_forward_ref(
 @functools.lru_cache(100)
 def _resolve_str_forward_ref(
     type_or_name: str,
-    cls: Type,
+    cls: type,
     ns_types: NamespaceTypes,
-) -> Type:
+) -> type:
     if ns_types.local_types and type_or_name in ns_types.local_types:
         return ns_types.local_types[type_or_name]
     elif ns_types.global_types and type_or_name in ns_types.global_types:
@@ -224,11 +217,11 @@ def _resolve_str_forward_ref(
     elif hasattr(sys.modules[cls.__module__], type_or_name):
         return getattr(sys.modules[cls.__module__], type_or_name)
     else:
-        raise TypeError(f"Type hint '{type_or_name}' could not be resolved")
+        raise TypeError(f"type hint '{type_or_name}' could not be resolved")
 
 
 def from_dict(
-    cls: Type[C],
+    cls: type[C],
     fd_from: Optional[dict] = None,
     fd_check_types: bool = False,
     fd_copy_unknown: bool = True,
@@ -241,8 +234,8 @@ def from_dict(
 
     The dict is searched for fitting parameters. Keys that are not named like a parameter are ignored.
 
-    If cls has generic type annotations with type arguments being classes themselves (like typing.List[SubClass]),
-    the sub-classes are instantiated using the dictionary structure. Currently typing.List and typing.Mapping are
+    If cls has generic type annotations with type arguments being classes themselves (like typing.list[SubClass]),
+    the sub-classes are instantiated using the dictionary structure. Currently typing.list and typing.Mapping are
     supported.
 
     :param cls: Structure to be constructed from given dictionary.
@@ -278,7 +271,7 @@ def from_dict(
 
 
 def _from_dict_inner(
-    cls: Type[C],
+    cls: type[C],
     given_args: Union[dict, Any],
     fd_check_types: bool,
     fd_copy_unknown: bool,
@@ -354,10 +347,10 @@ def _from_dict_inner(
 
 
 def handle_item(
-    _get_constructor_type_hints: Callable[[Type], Mapping[str, Type]],
-    _resolve_str_forward_ref: Callable[[Union[str, Type]], Type],
-    _from_dict: Callable[[Type, dict], Any],
-    cls_argument_type: Type,
+    _get_constructor_type_hints: Callable[[type], Mapping[str, type]],
+    _resolve_str_forward_ref: Callable[[Union[str, type]], type],
+    _from_dict: Callable[[type, dict], Any],
+    cls_argument_type: type,
     given_argument: Any,
 ):
     """Handles an item who's type has not been determined yet"""
@@ -385,10 +378,10 @@ def handle_item(
 
 
 def handle_dict_argument(
-    _get_constructor_type_hints: Callable[[Type], Mapping[str, Type]],
-    _resolve_str_forward_ref: Callable[[Union[str, Type]], Type],
-    _from_dict: Callable[[Type, dict], Any],
-    cls_argument_type: Type,
+    _get_constructor_type_hints: Callable[[type], Mapping[str, type]],
+    _resolve_str_forward_ref: Callable[[Union[str, type]], type],
+    _from_dict: Callable[[type, dict], Any],
+    cls_argument_type: type,
     cls_arg_type_args: tuple,
     given_argument: dict,
 ):
@@ -406,7 +399,7 @@ def handle_dict_argument(
 
     # Expected type is dictionary object with type hints
     if cls_argument_origin is dict:
-        # Dict[a,b]; we only support b being a structure.
+        # dict[a,b]; we only support b being a structure.
         value_type = _resolve_str_forward_ref(cls_arg_type_args[1])
 
         # The dictionary value's type is either a dataclass or attr class
@@ -480,10 +473,10 @@ def handle_dict_argument(
 
 
 def handle_list_argument(
-    _get_constructor_type_hints: Callable[[Type], Mapping[str, Type]],
-    _resolve_str_forward_ref: Callable[[Union[str, Type]], Type],
-    _from_dict: Callable[[Type, dict], Any],
-    cls_argument_type: Type,
+    _get_constructor_type_hints: Callable[[type], Mapping[str, type]],
+    _resolve_str_forward_ref: Callable[[Union[str, type]], type],
+    _from_dict: Callable[[type, dict], Any],
+    cls_argument_type: type,
     cls_arg_type_args: tuple,
     given_argument: list,
 ):
@@ -559,10 +552,10 @@ def handle_list_argument(
 
 
 def _handle_union(
-    _get_constructor_type_hints: Callable[[Type], Mapping[str, Type]],
-    _resolve_str_forward_ref: Callable[[Union[str, Type]], Type],
-    _from_dict: Callable[[Type, dict], Any],
-    cls_argument_type: Type,
+    _get_constructor_type_hints: Callable[[type], Mapping[str, type]],
+    _resolve_str_forward_ref: Callable[[Union[str, type]], type],
+    _from_dict: Callable[[type, dict], Any],
+    cls_argument_type: type,
     given_argument: Any,
 ):
     """This is called when the expected type is a union of multiple types"""

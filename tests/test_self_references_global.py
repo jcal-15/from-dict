@@ -1,14 +1,8 @@
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Optional
 
 from from_dict import from_dict
-
-if sys.version_info[:2] >= (3, 9):
-    LIST = list
-else:
-    LIST = List
-
 
 @dataclass
 class LinkListNode:
@@ -18,7 +12,7 @@ class LinkListNode:
 @dataclass
 class TreeNode:
     name: str
-    children: LIST['TreeNode']
+    children: list['TreeNode']
 
 @dataclass
 class LinkListNode2:
@@ -29,7 +23,7 @@ class LinkListNode2:
 @dataclass
 class DictNode:
     name: str
-    children: Dict[str, 'DictNode']
+    children: dict[str, 'DictNode']
 
 def test_self_ref():
     data = {"name": "n1", "next": {"name": "n2", "next": None}}

@@ -2,8 +2,6 @@ import time
 import sys
 from dataclasses import dataclass
 
-from typing import List, Dict
-
 import pytest
 from from_dict import from_dict
 
@@ -42,15 +40,15 @@ class MainData:
     name: str
     id: int
     date: str
-    inner: List['InnerData']
-    properties: Dict[str, str]
+    inner: list['InnerData']
+    properties: dict[str, str]
 
 
 @dataclass(frozen=True)
 class InnerData:
     name: str
     result: bool
-    tags: List[str]
+    tags: list[str]
 
 def test_cache_speed_improvement():
     test_data =  {

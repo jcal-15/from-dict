@@ -1,14 +1,9 @@
 
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Optional
 
 from from_dict import from_dict
-
-if sys.version_info[:2] >= (3, 9):
-    LIST = list
-else:
-    LIST = List
 
 
 def test_local_self_ref():
@@ -26,7 +21,7 @@ def test_local_self_ref_in_list():
     @dataclass
     class Node:
         name: str
-        children: LIST['Node']
+        children: list['Node']
 
     data = {"name": "n1", "children": [{"name": "n2", "children": []}]}
     node = from_dict(Node, data, fd_check_types=True, fd_local_ns=locals())
@@ -51,7 +46,7 @@ def test_local_self_ref_in_dict():
     @dataclass
     class Node:
         name: str
-        children: Dict[str, 'Node']
+        children: dict[str, 'Node']
 
     data = {
         "name": "n1", 

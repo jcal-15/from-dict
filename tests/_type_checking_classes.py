@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union, TypeVar, Generic, Literal
+from typing import Any, Optional, Union, TypeVar, Generic, Literal
 
 import attr
 
@@ -44,28 +44,28 @@ class ClassBase(Generic[TTestType, TSelfRef]):
     any: Any
     self_ref: Optional[TSelfRef]
 
-    list_normal: List[TTestType]
-    list_optional: List[Optional[TTestType]]
-    list_union: List[Union[str, NormalClass, DataClass, TTestType]]
-    list_any: List[Any]
-    list_self_ref: List[TSelfRef]
+    list_normal: list[TTestType]
+    list_optional: list[Optional[TTestType]]
+    list_union: list[Union[str, NormalClass, DataClass, TTestType]]
+    list_any: list[Any]
+    list_self_ref: list[TSelfRef]
     
-    dict_normal: Dict[str, TTestType]
-    dict_optional: Dict[str, Optional[TTestType]]
-    dict_union: Dict[str, Union[str, NormalClass, DataClass, TTestType]]
-    dict_any: Dict[str, Any]
-    dict_self_ref: Dict[str, TSelfRef]
+    dict_normal: dict[str, TTestType]
+    dict_optional: dict[str, Optional[TTestType]]
+    dict_union: dict[str, Union[str, NormalClass, DataClass, TTestType]]
+    dict_any: dict[str, Any]
+    dict_self_ref: dict[str, TSelfRef]
 
 
 ClassPrimitives = ClassBase[int, "ClassPrimitives"]
-ClassDict = ClassBase[Dict[str,str], "ClassDict"]
+ClassDict = ClassBase[dict[str,str], "ClassDict"]
 ClassDictSimple = ClassBase[dict, "ClassDictSimple"]
-ClassList = ClassBase[List[str], "ClassList"]
+ClassList = ClassBase[list[str], "ClassList"]
 ClassDataClass = ClassBase[DataClass, "ClassDataClass"]
 ClassNormalClass = ClassBase[NormalClass, "ClassNormalClass"]
 ClassAttrClass = ClassBase[AttrClass, "ClassAttrClass"]
-ClassListDataClass = ClassBase[List[DataClass], "ClassListDataClass"]
-ClassDictDataClass = ClassBase[Dict[str, DataClass], "ClassDictDataClass"]
+ClassListDataClass = ClassBase[list[DataClass], "ClassListDataClass"]
+ClassDictDataClass = ClassBase[dict[str, DataClass], "ClassDictDataClass"]
 ClassLiteral = ClassBase[Literal["my-literal"], "ClassLiteral"]
 ClassMultiLiteral = ClassBase[Literal[2, 3, 5, 7, 11], "ClassMultiLiteral"]
 
